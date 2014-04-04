@@ -1,0 +1,17 @@
+{
+  "name": "bcs-recipe-editor",
+  "version": "0.1.0",
+  "dependencies": {},
+  "devDependencies": {
+    "docker": "~0.2.8",
+    "grunt": "~0.4.1",
+    "grunt-contrib-jshint": "~0.6.0",
+    "grunt-contrib-jade": "~0.6.0",
+    "grunt-contrib-stylus": "~0.5.0",
+    "grunt-contrib-watch": "~0.4.4",
+    "grunt-contrib-uglify": "~0.2.2",
+    "grunt-contrib-concat": "~0.3.0",
+    "grunt-github-pages": "~0.0.4"
+  }
+}
+
