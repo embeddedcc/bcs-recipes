@@ -264,7 +264,7 @@ $( document ).ready( function () {
                                 
                             });
                             
-                            $('#values .fields button').before($fieldset);
+                            $('#values .fields').append($fieldset);
                         });
                     }
                 }
