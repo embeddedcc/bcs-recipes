@@ -23,24 +23,27 @@ var recipeFields,
     
     module.load = function (bcsUrl) {
         
+        module.url = bcsUrl;
+
         if(!localStorage['bcs-recipe.fields']) {
+            console.log('no data in localStorage');
             return false;
         }
         
         var fields = JSON.parse(localStorage['bcs-recipe.fields']);
-        
+        console.log('Loading: ' + bcsUrl + ': ' + fields.toString());
         if(fields.version !== module.version || !fields[bcsUrl]) {
             return false;
         }
         
         module.stored = fields;
         module.fields = fields[bcsUrl];
-        module.url = bcsUrl;
     };
     
     module.save = function () {
         module.stored[module.url] = module.fields;
         module.stored.version = module.version;
+        console.log('Saving: ' + module.url + ': ' + module.stored.toString());
         
         localStorage['bcs-recipe.fields'] = JSON.stringify(module.stored);
     };
@@ -244,6 +247,9 @@ var recipeFields,
     }
     
     module.initialize = function () {
+        // Remove any existing fields
+        $('#values fieldset:not(.template)').remove();
+        
         recipeFields.each(function (field) {
             var $fieldset = $('#values fieldset.template').clone();
             var $input = $fieldset.find('input');
