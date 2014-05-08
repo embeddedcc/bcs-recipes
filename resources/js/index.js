@@ -48,6 +48,15 @@ var recipeFields,
         localStorage['bcs-recipe.fields'] = JSON.stringify(module.stored);
     };
     
+    module.eachName = function (callback) {
+        module.fields.map(function (e) {return e.name;}) // Get the field names
+            .filter(function (e, i, a) { return a.indexOf(e) === i;}) // Unique
+            .forEach(function (name, index, array) { // Iterate through and call callback for each name
+                // send array of fields with this name to the callback
+                callback(module.fields.filter(function (e) {return e.name === name;}), index, array); 
+            });
+    };
+    
     module.each = function (callback) {
         module.fields.forEach(callback);  /*(field, index, array)*/
     };
@@ -248,83 +257,94 @@ var recipeFields,
     
     module.initialize = function () {
         // Remove any existing fields
-        $('#values fieldset:not(.template)').remove();
+        $('#values fieldset:not(.template):not(.bcs)').remove();
         
-        recipeFields.each(function (field) {
-            var $fieldset = $('#values fieldset.template').clone();
-            var $input = $fieldset.find('input');
-            var type = field.element.split('-')[0];
-            var index = field.element.split('-')[1];
-            
-            $fieldset.removeClass('hide');
-            $fieldset.removeClass('template');
-    
-            $fieldset.find('label').html(field.name);
-            $input.attr('data-api', api(field));
-            $input.attr('data-key', index);
-    
-            if(type === 'oc') {
-                $input.attr('data-type', 'number');
-            } else if(type === 'timer') {
-                $input.attr('data-type', 'time');
-            } else if (type === 'ec') {
-                switch(bcs.processes[field.process].states[field.state]['exit_conditions'][index]['source_type']) {
-                    case 2:
-                        $input.attr('data-type', 'time');
-                        break;
-                    case 1:
-                        $input.attr('data-type', 'number');
-                        break;
-                }
-            }
-            
-            if(type === 'timer') {
-                $input.attr('data-attr', 'init');
-                $input.attr('data-object', 'timers');
-            } else {
-                $input.attr('data-attr', field.element.split('-')[0] === 'oc' ? 'setpoint' : 'value');
-            }
-            
-            
-            $.get(bcs.url + api(field), function (body) {
-                if($input.attr('data-object')) {
-                    body = body[$input.attr('data-object')];
-                }
+        recipeFields.eachName(function (fields) {
+            fields.forEach(function (field, i) {
+                var $fieldset = $('#values fieldset.template').clone();
+                var $input = $fieldset.find('input');
+                var type = field.element.split('-')[0];
+                var index = field.element.split('-')[1];
                 
-                var value = body[$input.attr('data-key')][$input.attr('data-attr')] / 10;
+                // If there are multiple fields with this name, we only display one
+                // and update all the hidden ones when it changes.
+                if(i === 0) { $fieldset.removeClass('hide'); }
+                $fieldset.removeClass('template');
+        
+                $fieldset.find('label').html(field.name);
+                $input.attr('data-api', api(field));
+                $input.attr('data-key', index);
+                $input.attr('data-fieldmatch', field.name);
                 
-                if(type === 'timer' || $input.attr('data-type') !== 'number') {
-                    value = new bcslib.Time(value).toString();
-                } 
-                
-                $input.val(value);
-            });
-            
-            $input.on('change', function () {
-                var data = {
-                    key: parseInt($input.attr('data-key')),
-                    value: {}
-                };
-    
-                if($input.attr('data-type') === 'number') {
-                    data.value[$input.attr('data-attr')] = parseInt($input.val()) * 10;
-                } else if($input.attr('data-type') === 'time') {
-                    data.value[$input.attr('data-attr')] = new bcslib.Time().fromString($input.val()).value * 10;
+                if(type === 'oc') {
+                    $input.attr('data-type', 'number');
+                } else if(type === 'timer') {
+                    $input.attr('data-type', 'time');
+                } else if (type === 'ec') {
+                    switch(bcs.processes[field.process].states[field.state]['exit_conditions'][index]['source_type']) {
+                        case 2:
+                            $input.attr('data-type', 'time');
+                            break;
+                        case 1:
+                            $input.attr('data-type', 'number');
+                            break;
+                    }
                 }
                 
                 if(type === 'timer') {
-                    data = { 'timers': data };
+                    $input.attr('data-attr', 'init');
+                    $input.attr('data-object', 'timers');
+                } else {
+                    $input.attr('data-attr', field.element.split('-')[0] === 'oc' ? 'setpoint' : 'value');
                 }
                 
-                $.post(bcs.url + $input.attr('data-api'), JSON.stringify(data), function (body) {
-                    var value = $input.attr('data-type') === 'number' ? body[$input.attr('data-key')][$input.attr('data-attr')] / 10 : 
-                                                                       new bcslib.Time(body[$input.attr('data-key')].value / 10).toString();
+                
+                $.get(bcs.url + api(field), function (body) {
+                    if($input.attr('data-object')) {
+                        body = body[$input.attr('data-object')];
+                    }
+                    
+                    var value = body[$input.attr('data-key')][$input.attr('data-attr')] / 10;
+                    
+                    if(type === 'timer' || $input.attr('data-type') !== 'number') {
+                        value = new bcslib.Time(value).toString();
+                    } 
+                    
                     $input.val(value);
                 });
                 
+                $input.on('change', function () {
+                    var data = {
+                        key: parseInt($input.attr('data-key')),
+                        value: {}
+                    };
+        
+                    if($input.attr('data-type') === 'number') {
+                        data.value[$input.attr('data-attr')] = parseInt($input.val()) * 10;
+                    } else if($input.attr('data-type') === 'time') {
+                        data.value[$input.attr('data-attr')] = new bcslib.Time().fromString($input.val()).value * 10;
+                    }
+                    
+                    if(type === 'timer') {
+                        data = { 'timers': data };
+                    }
+                    
+                    $.post(bcs.url + $input.attr('data-api'), JSON.stringify(data), function (body) {
+                        var value = $input.attr('data-type') === 'number' ? body[$input.attr('data-key')][$input.attr('data-attr')] / 10 : 
+                                                                           new bcslib.Time(body[$input.attr('data-key')].value / 10).toString();
+                        $input.val(value);
+                    });
+                    
+                    // Update hidden fields
+                    if(!$input.parents('fieldset').hasClass('hide')) {
+                        $('fieldset.hide [data-fieldmatch=' + field.name + ']').val($input.val()).trigger('change');
+                    }
+                    
+                });
+                
+                $('#values .fields').append($fieldset);
+                
             });
-            
-            $('#values .fields').append($fieldset);
         });
     };
 }) (view.entry = {});
