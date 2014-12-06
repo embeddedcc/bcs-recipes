@@ -1,17 +1,8 @@
 /*jshint -W065 */
-/*global bcslib */
+/*global Q, BCS */
 (function () {
-  
-var bcs = {
-  version: '',
-  processes: [],
-  outputs: [],
-  probes: [],
-  get outputCount() { return this.version === 'BCS-460' ? 6 : 8; }, /* Only temp controllable outputs */
-  get probeCount() { return this.version === 'BCS-460' ? 4 : 8; }
-  
-};
 
+var bcs = null;
 var recipeFields, 
   view = {};
 
@@ -252,7 +243,7 @@ var recipeFields,
         endpoint = '';
     }
     
-    return '/api/process/' + field.process + '/state/' + field.state + endpoint;
+    return 'process/' + field.process + '/state/' + field.state + endpoint;
   }
   
   module.initialize = function () {
@@ -298,8 +289,7 @@ var recipeFields,
           $input.attr('data-attr', field.element.split('-')[0] === 'oc' ? 'setpoint' : 'value');
         }
         
-        
-        $.get(bcs.url + api(field), function (body) {
+        bcs.read(api(field)).then(function (body) {
           if($input.attr('data-object')) {
             body = body[$input.attr('data-object')];
           }
@@ -307,7 +297,7 @@ var recipeFields,
           var value = body[$input.attr('data-key')][$input.attr('data-attr')] / 10;
           
           if(type === 'timer' || $input.attr('data-type') !== 'number') {
-            value = new bcslib.Time(value).toString();
+            value = new BCS.Time(value * 10).toString();
           } 
           
           $input.val(value);
@@ -322,22 +312,22 @@ var recipeFields,
           if($input.attr('data-type') === 'number') {
             data.value[$input.attr('data-attr')] = parseInt($input.val()) * 10;
           } else if($input.attr('data-type') === 'time') {
-            data.value[$input.attr('data-attr')] = new bcslib.Time().fromString($input.val()).value * 10;
+            data.value[$input.attr('data-attr')] = new BCS.Time.fromString($input.val()).value * 10;
           }
           
           if(type === 'timer') {
             data = { 'timers': data };
           }
-          
-          $.post(bcs.url + $input.attr('data-api'), JSON.stringify(data), function (body) {
+
+          bcs.write($input.attr('data-api'), data).then(function (body) {
             var value = $input.attr('data-type') === 'number' ? body[$input.attr('data-key')][$input.attr('data-attr')] / 10 : 
-                                       new bcslib.Time(body[$input.attr('data-key')].value / 10).toString();
+                                       new BCS.Time(body[$input.attr('data-key')].value / 10).toString();
             $input.val(value);
           });
           
           // Update hidden fields
           if(!$input.parents('fieldset').hasClass('hide')) {
-            $('fieldset.hide [data-fieldmatch=' + field.name + ']').val($input.val()).trigger('change');
+            $('fieldset.hide [data-fieldmatch="' + field.name + '"]').val($input.val()).trigger('change');
           }
           
         });
@@ -350,47 +340,37 @@ var recipeFields,
 }) (view.entry = {});
 
 
-function getTimers(process, callback) {
-  bcs.processes[process].timers = [];
-  async.times(4, function (i, next) {
-    $.get(bcs.url + '/api/process/' + process + '/timer/' + i, function (data) {
-      bcs.processes[process].timers[i] = {};
-      bcs.processes[process].timers[i].name = data.name;
-      next();
-    })
-    .fail(function () {next(true);});
-
-  }, callback);
+function getTimers(process) {
+  var timerPromises = [];
+  for(var i = 0; i < 4; i++) {
+    timerPromises.push(bcs.read('process/' + process + '/timer/' + i));
+  }
+  return Q.all(timerPromises);
 }
 
-function getStates(process, callback) {
-  async.times(8, function (i, nextState) {
-    $.get(bcs.url + '/api/process/' + process + '/state/' + i, function (data) {
-      bcs.processes[process].states[i] = {};
-      bcs.processes[process].states[i].name = data.name;
-      bcs.processes[process].states[i].timers = data.timers;
+function getStates(process) {
+  var statePromises = [];
+  async.times(8, function (i) {
+    statePromises.push(bcs.read('process/' + process + '/state/' + i).then(function (state) {
       
-      async.parallel([
-        function (next) {
-          $.get(bcs.url + '/api/process/' + process + '/state/' + i + '/exit_conditions', function (data) {
-            bcs.processes[process].states[i]['exit_conditions'] = data;
-            next();
-          })
-          .fail(function () {next(true);});
-        },
-        function (next) {
-          $.get(bcs.url + '/api/process/' + process + '/state/' + i + '/output_controllers', function (data) {
-            bcs.processes[process].states[i]['output_controllers'] = data;
-            next();
-          })
-          .fail(function () {next(true);});
-          
-        }
-      ], nextState);
-    });
-  }, callback);              
-}
+      return Q.all([
+        bcs.read('process/' + process + '/state/' + i + '/exit_conditions').then(function (ec) {
+          return ec;
+        }),
+        bcs.read('process/' + process + '/state/' + i + '/output_controllers').then(function (oc) {
+          return oc;
+        })
+      ])
+      .then(function (results) {
+        state['exit_conditions'] = results[0];
+        state['output_controllers'] = results[1];
+        return state;
+      });
+    }));    
+  });
 
+  return Q.all(statePromises);
+}
 
 $( document ).ready( function () {
   /*
@@ -398,87 +378,77 @@ $( document ).ready( function () {
     data from the BCS.
   */
   $('[data-name=bcs]').on('change', function (event) {
-    $.get(event.target.value + '/api/device', function (data) {
-      if(data.version === '4.0.0') {
-        bcs.version = data.type;
-        bcs.url = event.target.value;
-        
-        recipeFields.load(bcs.url);
-        localStorage['bcs-backup.url'] = bcs.url;
-        
-        $(event.target).parent().addClass('has-success').removeClass('has-error');
-      } else {
-        $(event.target).parent().addClass('has-error').removeClass('has-success');      
-      }
+    bcs = new BCS.Device(event.target.value);
+    bcs.on('notReady', function () {
+      $(event.target).parent().addClass('has-error').removeClass('has-success');
+    })
+    .on('ready', function () {
       
+      recipeFields.load(bcs.address);
+      localStorage['bcs-backup.url'] = bcs.address;
+      $(event.target).parent().addClass('has-success').removeClass('has-error');
+
       $('.loading').removeClass('hide');
       $('.fields').addClass('hide');
-      
+
       async.series([
         /*
           Get Process / State configuration
         */
         function (done) {
-          async.times(8, function (i, nextProcess) {
-            $.get(bcs.url + '/api/process/' + i, function (data) {
-              bcs.processes[i] = {};
-              bcs.processes[i].name = data.name;
-              bcs.processes[i].states = [];
-              async.series([
-                function (next) {
-                  getTimers(i, next);
-                },
-                function (next) {
-                  getStates(i, next);
-                }
-              ], nextProcess);
+          if(!bcs.processes) { bcs.processes = []; }
+          async.times(8, function (p, nextProcess) {
+            bcs.read('process/' + p).then(function (process) {
+              bcs.processes[p] = {
+                name: process.name,
+                states: []
+              };
+              
+              return getStates(p);
             })
-            .fail(function () {
+            .then(function (states) {
+              bcs.processes[p].states = states;
+              
+              return getTimers(p);
+            })
+            .then(function (timers) {
+              bcs.processes[p].timers = timers;
+            })
+            .catch(function () {
               $('.failed').removeClass('hide');
               $('.loading').addClass('hide');
               $('.fields').addClass('hide');
-              nextProcess(true);
-            });
+            })
+            .finally(nextProcess);
           }, done);
         },
         /*
           Get Outputs and Temp Probes so we can show the names
         */
         function (done) {
-          async.times(bcs.outputCount, function (i, next) {
-            $.get(bcs.url + '/api/output/' + i, function (data) {
-              bcs.outputs[i] = data;
-              next();
-            });
-          }, 
-          function () {
-            async.times(bcs.probeCount, function (i, next) {
-              $.get(bcs.url + '/api/temp/' + i, function (data) {
-                bcs.probes[i] = data;
-                next();
-              });
-            }, done);
-          });
+          bcs.helpers.getOutputs().then(function (outputs) {
+            bcs.outputs = outputs;
+          })
+          .finally(done);
+        }, 
+        function (done) {
+          bcs.helpers.getProbes().then(function (probes) {
+            bcs.probes = probes;
+          })
+          .finally(done);
         }
       ],
       function () {
         // done getting values from BCS
-        if($(event.target).parents('#setup').length) {
-          view.setup.initialize();
-        } else {
-          view.entry.initialize();
-        }
+        view.setup.initialize();
+        view.entry.initialize();
         
         $('.loading').addClass('hide');
         $('.fields').removeClass('hide');
       }); 
-
-    })
-    .fail(function () {
-      $(event.target).parent().addClass('has-error').removeClass('has-success');
     });
   });
-  
+    
   /*
     Restore the URL on page load if we saved one in localStorage
   */

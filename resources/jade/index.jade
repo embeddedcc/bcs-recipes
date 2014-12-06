@@ -3,7 +3,23 @@ extends layout
 block content
   #body.container
     h1 Recipes
-  
+
+    form
+      fieldset.bcs
+        div.form-group
+          label.control-label(for='bcs') BCS 4.0 Device:
+          input.form-control(type='url', data-name='bcs', data-tab='values', placeholder='http://192.168.1.5/')
+          i.icon-ok.pull-right.checkmark
+
+      div.loading.alert.alert-info.hide
+        h3 
+          i.icon-spinner.icon-spin 
+          | Loading data from BCS...
+
+      div.failed.alert.alert-danger.hide
+        h3 Failed to load data from BCS
+
+    
     ul.nav.nav-tabs
       li.active
         a(href="#values", data-toggle="tab") Recipe Values
@@ -12,21 +28,6 @@ block content
     
     .tab-content
       .tab-pane.active#values
-        form
-          fieldset.bcs
-            div.form-group
-              label.control-label(for='bcs') BCS 4.0 Device:
-              input.form-control(type='url', data-name='bcs', data-tab='values', placeholder='http://192.168.1.5/')
-              i.icon-ok.pull-right.checkmark
-
-        div.loading.alert.alert-info.hide
-          h3 
-            i.icon-spinner.icon-spin 
-            | Loading data from BCS...
-
-        div.failed.alert.alert-danger.hide
-          h3 Failed to load data from BCS
-
         fieldset.template.hide
           div.form-group
             label.control-label(for='variable') Label:
@@ -36,21 +37,6 @@ block content
         form.fields.hide
   
       .tab-pane#setup
-        form
-          fieldset
-            div.form-group
-              label.control-label(for='bcs') BCS 4.0 Device:
-              input.form-control(type='url', data-name='bcs', data-tab='setup', placeholder='http://192.168.1.5/')
-              i.icon-ok.pull-right.checkmark
-        
-        div.loading.alert.alert-info.hide
-          h3 
-            i.icon-spinner.icon-spin 
-            | Loading data from BCS...
-        
-        div.failed.alert.alert-danger.hide
-          h3 Failed to load data from BCS
-          
         form.fields.form-inline.hide
           fieldset
             div.form-group(data-id="0")
