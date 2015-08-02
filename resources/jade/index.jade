@@ -64,7 +64,55 @@ block content
           h4.modal-title Setting Recipe Values...
         .modal-body
 
+  .modal.fade(id='about')
+    .modal-dialog
+      .modal-content
+        .modal-header
+          button.close(type='button', data-dismiss='modal', area-label='Close')
+            span(aria-hidden='true')&times;
+          h4.modal-title(id='aboutLabel') BCS Recipe Tool
+        .modal-body
+          h4= "v" + version
+          div Check us out on 
+            a(href="https://www.github.com/embeddedcc/bcs-recipes") GitHub 
 
+  .modal.fade(id="export")
+    .modal-dialog
+      .modal-content
+        .modal-header
+          button.close(data-dismiss='modal', aria-hidden='true') &times;
+          h4.modal-title Export Settings
+        .modal-body
+          form
+            fieldset
+              .form-group(id='exportSystems') 
+                label.control-label(for='chooser') BCS Devices:
+              .form-group.form-inline.fileName
+                label.control-label(for='fileName') Backup to file:
+                .input-group.col-sm-8
+                  input.form-control(type='text', data-name='fileName', placeholder='bcs-recipe-settings')
+                  .input-group-addon .json
+              .form-group
+                button.btn.btn-primary(data-name='export') Export
+                  
+  .modal.fade(id="import")
+    .modal-dialog
+      .modal-content
+        .modal-header
+          button.close(data-dismiss='modal', aria-hidden='true') &times;
+          h4.modal-title Import Settings
+        .modal-body
+          form
+            fieldset
+              .form-group(id='importFile')
+                label.control-label(for='fileName') Restore from file:
+                .input-group.col-sm-8
+                  input.form-control(type='file', data-name='fileName')
+              .form-group(id='importSystems')
+              .form-group
+                button.btn.btn-primary.hide(data-name='import') Import
+          
+  
   div#progress(style='display:none')
     .progress
       .progress-bar.progress-bar-success(style='width: 0%', role='progressbar', aria-valuenow='0')

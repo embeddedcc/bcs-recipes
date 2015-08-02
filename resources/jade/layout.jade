@@ -30,6 +30,15 @@ html
             a(href="/bcs-backup") Backup/Restore
           li
             a(href="/bcs-config-migrator") 3.x Config Migrator
+
+        ul.nav.navbar-nav.navbar-right
+          li
+            a.dropdown-toggle(href="#", aria-expanded="false", role="button", data-toggle="dropdown")
+              i.icon-reorder.icon-large 
+            ul.dropdown-menu#settingsMenu
+              li.divider
+              li
+                a(href="#", data-toggle="modal", data-target="#about") About
   
     block content
     script(src='//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js')

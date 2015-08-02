@@ -1,11 +1,23 @@
+/*
+	# index.js
+
+	Created by Brent Rahn <brent.rahn@gmail.com>
+
+	Code for BCS Recipe Tool
+*/
+
 /*jshint -W065 */
 /*global Q, BCS */
 (function () {
 
 var bcs = null;
-var recipeFields, 
-  view = {};
+var recipeFields,
+    importData,
+    view = {};
 
+/*
+	# recipeFields
+*/
 (function (module) {
   module.version = 1;
   module.fields = [];
@@ -24,6 +36,7 @@ var recipeFields,
     var fields = JSON.parse(localStorage['bcs-recipe.fields']);
     console.log('Loading: ' + bcsUrl + ': ' + fields.toString());
     if(fields.version !== module.version || !fields[bcsUrl]) {
+      console.error('Version mismatch.');
       return false;
     }
     
@@ -61,7 +74,11 @@ var recipeFields,
   };
 }) (recipeFields = {});
 
+/*
+	# view.setup
 
+	Handles the "Variable Setup" tab
+*/
 (function (module) {
   var fieldCount = 0;
   function createField() {
@@ -228,6 +245,11 @@ var recipeFields,
 }) (view.setup = {});
 
 
+/*
+	# view.entry
+
+	Handles the "Recipe Values" tab
+*/
 (function (module) {
   function api(field) {
     var endpoint = null;
@@ -372,6 +394,11 @@ function getStates(process) {
   return Q.all(statePromises);
 }
 
+/*
+	# document ready
+
+	Initialize and setup the page
+*/
 $( document ).ready( function () {
   /*
     When a BCS url is entered, verify that it is running 4.0 and load 
@@ -385,6 +412,16 @@ $( document ).ready( function () {
     .on('ready', function () {
       
       recipeFields.load(bcs.address);
+      
+      // Add list of BCS' found in recipeFields to the Export tab
+      Object.keys(recipeFields.stored).forEach(function(device) {
+        if(device === 'version') { return; }
+        var $exportList = $('#exportSystems');
+        $exportList.append(
+          $('<label class="checkbox">' + device + '</label>')
+          .append($('<input type="checkbox" data-name="' + device + '" checked>')));
+      });
+
       localStorage['bcs-backup.url'] = bcs.address;
       $(event.target).parent().addClass('has-success').removeClass('has-error');
 
@@ -457,6 +494,69 @@ $( document ).ready( function () {
     $('[data-name=bcs]').val(localStorage['bcs-backup.url']);
     $('[data-name=bcs]').change();
   }
+	
+	/* setup menu items */
+	var $menu = $('#settingsMenu');
+	$menu.prepend($('<li></li>')
+		.append($('<a href="#" data-toggle="modal" data-target="#export">Export Settings</a>')));
+	$menu.prepend($('<li></li>')
+		.append($('<a href="#" data-toggle="modal" data-target="#import">Import Settings</a>')));
+    
+  $('#export button[data-name=export]').on('click', function (event) {
+    event.preventDefault();
+    var settings = {
+      version: recipeFields.version
+    };
+    
+    $('#exportSystems input:checked').each(function (_, system) {
+      settings[system.dataset['name']] = recipeFields.stored[system.dataset['name']] ;
+    });
+    // Create and save the file
+    var blob = new Blob([JSON.stringify(settings)], {
+      type: "text/plain;charset=utf-8"
+    });
+    saveAs(blob, ($('[data-name=fileName]').val() || "bcs-recipe-settings") + ".json");
+    $('#export').modal('hide');
+  });
+  
+  $('#import [data-name=fileName]').on('change', function (event) {
+    var file = event.target.files[0],
+      reader;
+
+    reader = new FileReader();
+    reader.addEventListener("load", function(event) {
+      var importSystems = $('#importSystems');
+      importSystems.empty();
+      
+      importData = JSON.parse(event.target.result);
+      if (importData.version === recipeFields.version) {
+        Object.keys(importData).forEach(function(device) {
+          if(device === "version") return;
+          
+          importSystems.append(
+            $('<label class="checkbox">' + device + '</label>')
+            .append($('<input type="checkbox" data-name="' + device + '" checked>')));
+        });        
+      }
+
+      $('#import button').removeClass('hide');
+      
+    });
+    
+    $('#import button[data-name=import]').on('click', function () {
+      recipeFields.stored.version = importData.version;
+      
+      $('#import input[type="checkbox"]').each(function(_, input) {
+        if(input.checked && importData[input.dataset['name']]) {
+          recipeFields.stored[input.dataset['name']] = importData[input.dataset['name']];          
+        }
+      });
+      localStorage['bcs-recipe.fields'] = JSON.stringify(recipeFields.stored);
+      
+    });
+
+    reader.readAsText(file);    
+  });
 });
 
 })(); 
