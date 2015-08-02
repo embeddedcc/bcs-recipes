@@ -82,7 +82,10 @@ grunt.initConfig({
 	*/
 	jade: {
 		options: {
-			path: '<%= dirs.src %>/jade/'
+			path: '<%= dirs.src %>/jade/',
+			data: { 
+				version: '<%= pkg.version %>' 
+			}
 		},
 		all: {
 			files: {
@@ -109,7 +112,7 @@ grunt.initConfig({
 		],
 		tasks: 'default'
 	},
-	
+		
 	// See https://github.com/thanpolas/grunt-github-pages for pre-requisites
     githubPages: {
         target: {

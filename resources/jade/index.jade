@@ -1,87 +1,121 @@
 extends layout
 
 block content
-    #body.container
-        h1 Recipes
+  #body.container
+    h1 Recipes
+
+    form
+      fieldset.bcs
+        div.form-group
+          label.control-label(for='bcs') BCS 4.0 Device:
+          input.form-control(type='url', data-name='bcs', data-tab='values', placeholder='http://192.168.1.5/')
+          i.icon-ok.pull-right.checkmark
+
+      div.loading.alert.alert-info.hide
+        h3 
+          i.icon-spinner.icon-spin 
+          | Loading data from BCS...
+
+      div.failed.alert.alert-danger.hide
+        h3 Failed to load data from BCS
+
     
-        ul.nav.nav-tabs
-            li.active
-                a(href="#values", data-toggle="tab") Recipe Values
-            li
-                a(href="#setup", data-toggle="tab") Variable Setup
-        
-        .tab-content
-            .tab-pane.active#values
-                form
-                    fieldset.bcs
-                        div.form-group
-                            label.control-label(for='bcs') BCS 4.0 Device:
-                            input.form-control(type='url', data-name='bcs', data-tab='values', placeholder='http://192.168.1.5/')
-                            i.icon-ok.pull-right.checkmark
-
-                div.loading.alert.alert-info.hide
-                    h3 
-                        i.icon-spinner.icon-spin 
-                        | Loading data from BCS...
-
-                div.failed.alert.alert-danger.hide
-                    h3 Failed to load data from BCS
-
-                fieldset.template.hide
-                    div.form-group
-                        label.control-label(for='variable') Label:
-                        input.form-control(data-name='variable')
-
-
-                form.fields.hide
+    ul.nav.nav-tabs
+      li.active
+        a(href="#values", data-toggle="tab") Recipe Values
+      li
+        a(href="#setup", data-toggle="tab") Variable Setup
     
-            .tab-pane#setup
-                form
-                    fieldset
-                        div.form-group
-                            label.control-label(for='bcs') BCS 4.0 Device:
-                            input.form-control(type='url', data-name='bcs', data-tab='setup', placeholder='http://192.168.1.5/')
-                            i.icon-ok.pull-right.checkmark
-                
-                div.loading.alert.alert-info.hide
-                    h3 
-                        i.icon-spinner.icon-spin 
-                        | Loading data from BCS...
-                
-                div.failed.alert.alert-danger.hide
-                    h3 Failed to load data from BCS
-                    
-                form.fields.form-inline.hide
-                    fieldset
-                        div.form-group(data-id="0")
-                            label.control-label(for='variable') Variable:
-                            input.form-control(type='text', data-name='variable')
-                            label.control-label(for='target') Target:
-                            select.form-control(data-name='targetProcess')
-                            select.form-control(data-name='targetState')
-                            select.form-control(data-name='targetElement')
-                            a.remove(href='#') 
-                                i.icon-minus.icon-large
-                    a.new(href='#')
-                        i.icon-plus.icon-large
-                        
-                    button.btn.btn-primary Save
-
-                        
-        
-
-    .modal.fade(id='dialog')
-        .modal-dialog
-            .modal-content
-                .modal-header
-                    button.close(data-dismiss='modal', aria-hidden='true') &times;
-                    h4.modal-title Setting Recipe Values...
-                .modal-body
+    .tab-content
+      .tab-pane.active#values
+        fieldset.template.hide
+          div.form-group
+            label.control-label(for='variable') Label:
+            input.form-control(data-name='variable')
 
 
-    div#progress(style='display:none')
-        .progress
-            .progress-bar.progress-bar-success(style='width: 0%', role='progressbar', aria-valuenow='0')
-            .progress-bar.progress-bar-danger(style='width: 0%', role='progressbar', aria-valuenow='0')
+        form.fields.hide
+  
+      .tab-pane#setup
+        form.fields.form-inline.hide
+          fieldset
+            div.form-group(data-id="0")
+              label.control-label(for='variable') Variable:
+              input.form-control(type='text', data-name='variable')
+              label.control-label(for='target') Target:
+              select.form-control(data-name='targetProcess')
+              select.form-control(data-name='targetState')
+              select.form-control(data-name='targetElement')
+              a.remove(href='#') 
+                i.icon-minus.icon-large
+          a.new(href='#')
+            i.icon-plus.icon-large
+            
+          button.btn.btn-primary Save
 
-    script(src='js/index.js')
+            
+    
+
+  .modal.fade(id='dialog')
+    .modal-dialog
+      .modal-content
+        .modal-header
+          button.close(data-dismiss='modal', aria-hidden='true') &times;
+          h4.modal-title Setting Recipe Values...
+        .modal-body
+
+  .modal.fade(id='about')
+    .modal-dialog
+      .modal-content
+        .modal-header
+          button.close(type='button', data-dismiss='modal', area-label='Close')
+            span(aria-hidden='true')&times;
+          h4.modal-title(id='aboutLabel') BCS Recipe Tool
+        .modal-body
+          h4= "v" + version
+          div Check us out on 
+            a(href="https://www.github.com/embeddedcc/bcs-recipes") GitHub 
+
+  .modal.fade(id="export")
+    .modal-dialog
+      .modal-content
+        .modal-header
+          button.close(data-dismiss='modal', aria-hidden='true') &times;
+          h4.modal-title Export Settings
+        .modal-body
+          form
+            fieldset
+              .form-group(id='exportSystems') 
+                label.control-label(for='chooser') BCS Devices:
+              .form-group.form-inline.fileName
+                label.control-label(for='fileName') Backup to file:
+                .input-group.col-sm-8
+                  input.form-control(type='text', data-name='fileName', placeholder='bcs-recipe-settings')
+                  .input-group-addon .json
+              .form-group
+                button.btn.btn-primary(data-name='export') Export
+                  
+  .modal.fade(id="import")
+    .modal-dialog
+      .modal-content
+        .modal-header
+          button.close(data-dismiss='modal', aria-hidden='true') &times;
+          h4.modal-title Import Settings
+        .modal-body
+          form
+            fieldset
+              .form-group(id='importFile')
+                label.control-label(for='fileName') Restore from file:
+                .input-group.col-sm-8
+                  input.form-control(type='file', data-name='fileName')
+              .form-group(id='importSystems')
+              .form-group
+                button.btn.btn-primary.hide(data-name='import') Import
+          
+  
+  div#progress(style='display:none')
+    .progress
+      .progress-bar.progress-bar-success(style='width: 0%', role='progressbar', aria-valuenow='0')
+      .progress-bar.progress-bar-danger(style='width: 0%', role='progressbar', aria-valuenow='0')
+
+  script(src='js/index.js')
