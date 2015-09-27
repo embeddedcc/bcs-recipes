@@ -201,7 +201,7 @@ var recipeFields,
     /*
       Set up button onclick for Save button on settings page
     */
-    $('#setup button').on('click', function () {
+    $('#setup button').on('click', function (event) {
       event.preventDefault();
       
       recipeFields.clear();
