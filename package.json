@@ -1,6 +1,6 @@
 {
   "name": "bcs-recipe-editor",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "dependencies": {},
   "devDependencies": {
     "docker": "~0.2.8",
