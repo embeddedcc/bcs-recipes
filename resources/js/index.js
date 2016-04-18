@@ -332,7 +332,7 @@ var recipeFields,
           };
     
           if($input.attr('data-type') === 'number') {
-            data.value[$input.attr('data-attr')] = parseInt($input.val()) * 10;
+            data.value[$input.attr('data-attr')] = parseInt(parseFloat($input.val()) * 10);
           } else if($input.attr('data-type') === 'time') {
             data.value[$input.attr('data-attr')] = new BCS.Time.fromString($input.val()).value * 10;
           }
