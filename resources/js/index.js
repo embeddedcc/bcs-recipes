@@ -35,12 +35,18 @@ var recipeFields,
     
     var fields = JSON.parse(localStorage['bcs-recipe.fields']);
     console.log('Loading: ' + bcsUrl + ': ' + fields.toString());
-    if(fields.version !== module.version || !fields[bcsUrl]) {
+    if(fields.version !== module.version) {
       console.error('Version mismatch.');
       return false;
     }
     
     module.stored = fields;
+		
+		if(!fields[bcsUrl]) {
+			console.error('BCS Not Found in settings.');
+			return false;
+		}
+		
     module.fields = fields[bcsUrl];
   };
   
