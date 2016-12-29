@@ -1,11 +1,1 @@
-body{font:14px "Lucida Grande",Helvetica,Arial,sans-serif}
-i.checkmark{margin-top:-1.3em;font-size:1.5em;margin-right:.2em}
-div.has-success i{color:#008000}
-div.has-error i{color:#f00}
-div.loading{text-align:center}
-i.icon-minus{margin-left:10px;color:#f00}
-i.icon-spinner{margin-right:7px}
-a.new{display:block}
-a.remove:hover,a.new:hover{text-decoration:none}
-fieldset{margin-bottom:15px}
-#about .modal-body{text-align:center}
+body{font:14px "Lucida Grande",Helvetica,Arial,sans-serif}i.checkmark{margin-top:-1.3em;font-size:1.5em;margin-right:.2em}div.has-success i{color:#008000}div.has-error i{color:#f00}div.loading{text-align:center}i.icon-minus{margin-left:10px;color:#f00}i.icon-spinner{margin-right:7px}a.new{display:block}a.remove:hover,a.new:hover{text-decoration:none}fieldset{margin-bottom:15px}#about .modal-body{text-align:center}
