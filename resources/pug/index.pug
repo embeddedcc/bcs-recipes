@@ -10,16 +10,21 @@ block content
           label.control-label(for='bcs') BCS 4.0 Device:
           input.form-control(type='url', data-name='bcs', data-tab='values', placeholder='http://192.168.1.5/')
           i.icon-ok.pull-right.checkmark
+          .credentials.hide
+            label.control-label Username:
+            input.form-control(type='text', disabled, value='admin')
+            label.control-label(for='password') Password:
+            input.form-control(type='password', data-name='password', data-tab='recipes')
 
       div.loading.alert.alert-info.hide
-        h3 
-          i.icon-spinner.icon-spin 
+        h3
+          i.icon-spinner.icon-spin
           | Loading data from BCS...
 
       div.failed.alert.alert-danger.hide
         h3 Failed to load data from BCS
 
-    
+
     ul.nav.nav-tabs
       li.active
         a(href="#values", data-toggle="tab") Recipe Values
@@ -69,7 +74,7 @@ block content
       .modal-content
         .modal-header
           button.close(type='button', data-dismiss='modal', area-label='Close')
-            span(aria-hidden='true')&times;
+            span(aria-hidden='true') &times;
           h4.modal-title(id='aboutLabel') BCS Recipe Tool
         .modal-body
           h4= "v" + version

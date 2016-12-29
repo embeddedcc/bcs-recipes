@@ -394,7 +394,7 @@ function getStates(process) {
         state['output_controllers'] = results[1];
         return state;
       });
-    }));    
+    }));
   });
 
   return Q.all(statePromises);
@@ -411,14 +411,29 @@ $( document ).ready( function () {
     data from the BCS.
   */
   $('[data-name=bcs]').on('change', function (event) {
-    bcs = new BCS.Device(event.target.value);
-    bcs.on('notReady', function () {
+    if($(event.target.parentElement).find('.credentials [data-name=password]')[0]) {
+      bcs = new BCS.Device(event.target.value, {
+        auth: {
+          username: 'admin',
+          password: $(event.target.parentElement).find('.credentials [data-name=password]')[0].value
+        }});
+    } else {
+      bcs = new BCS.Device(event.target.value);
+    }
+
+    bcs.on('notReady', function (e) {
       $(event.target).parent().addClass('has-error').removeClass('has-success');
+
+      // Check if authentication is required
+      if(e.cors && e.cors === 'rejected') {
+        $('.credentials').removeClass('hide');
+      }
+
     })
     .on('ready', function () {
-      
+
       recipeFields.load(bcs.address);
-      
+
       // Add list of BCS' found in recipeFields to the Export tab
       Object.keys(recipeFields.stored).forEach(function(device) {
         if(device === 'version') { return; }
@@ -446,7 +461,7 @@ $( document ).ready( function () {
                 name: process.name,
                 states: []
               };
-              
+
               return getStates(p);
             })
             .then(function (states) {
@@ -491,7 +506,11 @@ $( document ).ready( function () {
       }); 
     });
   });
-    
+
+  $('[data-name=password]').on('change', function () {
+    $('[data-name=bcs]').change();
+  });
+
   /*
     Restore the URL on page load if we saved one in localStorage
   */
