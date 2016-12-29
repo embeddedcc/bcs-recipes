@@ -1,1 +1,587 @@
-/*! bcs-recipe-editor - v0.1.2 - 2016-04-18 */!function(){function a(a){for(var b=[],c=0;4>c;c++)b.push(e.read("process/"+a+"/timer/"+c));return Q.all(b)}function b(a){var b=[];return async.times(8,function(c){b.push(e.read("process/"+a+"/state/"+c).then(function(b){return Q.all([e.read("process/"+a+"/state/"+c+"/exit_conditions").then(function(a){return a}),e.read("process/"+a+"/state/"+c+"/output_controllers").then(function(a){return a})]).then(function(a){return b.exit_conditions=a[0],b.output_controllers=a[1],b})}))}),Q.all(b)}var c,d,e=null,f={};!function(a){a.version=1,a.fields=[],a.stored={},a.url=null,a.load=function(b){if(a.url=b,!localStorage["bcs-recipe.fields"])return console.log("no data in localStorage"),!1;var c=JSON.parse(localStorage["bcs-recipe.fields"]);return console.log("Loading: "+b+": "+c.toString()),c.version!==a.version?(console.error("Version mismatch."),!1):(a.stored=c,c[b]?void(a.fields=c[b]):(console.error("BCS Not Found in settings."),!1))},a.save=function(){a.stored[a.url]=a.fields,a.stored.version=a.version,console.log("Saving: "+a.url+": "+a.stored.toString()),localStorage["bcs-recipe.fields"]=JSON.stringify(a.stored)},a.eachName=function(b){a.fields.map(function(a){return a.name}).filter(function(a,b,c){return c.indexOf(a)===b}).forEach(function(c,d,e){b(a.fields.filter(function(a){return a.name===c}),d,e)})},a.each=function(b){a.fields.forEach(b)},a.clear=function(){a.fields=[]},a.push=function(b){a.fields.push(b)}}(c={}),function(a){function b(){var a=$("#setup .fields fieldset").last().clone(!0),b=a.find("div.form-group");return b.attr("data-id",parseInt(b.attr("data-id"))+1),a.find("[data-name]").val(""),a.find("[data-name=targetState]").empty(),a.find("[data-name=targetElement]").empty(),$("#setup .fields fieldset").last().after(a),a}function d(a,b){a.empty(),a.append(new Option("")),$.each(e.processes[b].states,function(b,c){a.append(new Option(c.name,b))})}function g(a,b,c){var d=e.processes[b.val()];a.empty(),a.append(new Option("")),$.each(d.states[c].timers,function(b,c){c.used&&!c.preserve&&a.append(new Option("Timer: "+d.timers[b].name,"timer-"+b))}),$.each(d.states[c].output_controllers,function(b,c){(3===c.mode||4===c.mode)&&a.append(new Option("Output: "+e.outputs[b].name,"oc-"+b))}),$.each(d.states[c].exit_conditions,function(b,c){var f;c.enabled&&(2===c.source_type?(f=d.timers[c.source_number].name,a.append(new Option("Exit Condition "+(b+1)+": "+f,"ec-"+b))):1===c.source_type?(f=e.probes[c.source_number].name,a.append(new Option("Exit Condition "+(b+1)+": "+f,"ec-"+b))):a.append(new Option("Exit Condition "+(b+1),"ec-"+b)))})}var h=0;a.nextField=function(){var a=$("#setup .fields fieldset");return 0===h++?a.first():b()},a.initialize=function(){var a=$("#setup [data-name=targetProcess]");a.empty(),a.append(new Option("")),$.each(e.processes,function(b,c){a.append(new Option(c.name,b))}),$("#setup [data-name=targetProcess]").on("change",function(a){var b=$(a.target).siblings("[data-name=targetState]"),c=a.target.value;d(b,c),$(a.target).siblings("[data-name=targetElement]").empty()}),$("#setup [data-name=targetState]").on("change",function(a){var b=$(a.target).siblings("[data-name=targetElement]"),c=$(a.target).siblings("[data-name=targetProcess]");g(b,c,a.target.value)}),c.each(function(a){var b=f.setup.nextField();b.find("[data-name=variable]").val(a.name),b.find("[data-name=targetProcess]").val(a.process),d(b.find("[data-name=targetState]"),a.process),b.find("[data-name=targetState]").val(a.state),g(b.find("[data-name=targetElement]"),b.find("[data-name=targetProcess]"),a.state),b.find("[data-name=targetElement]").val(a.element)}),$("#setup button").on("click",function(a){a.preventDefault(),c.clear(),$("#setup .fields div.form-group").each(function(a,b){var d=$(b),e={name:d.find("[data-name=variable]").val(),process:d.find("[data-name=targetProcess]").val(),state:d.find("[data-name=targetState]").val(),element:d.find("[data-name=targetElement]").val()};c.push(e)}),c.save(),f.entry.initialize()}),$("#setup a.new").on("click",b),$("#setup a.remove").on("click",function(a){a.preventDefault();var b=$(a.target).parents("fieldset");"0"!==b.find("div.form-group").attr("data-id")?b.remove():b.find("[data-name]").val("")})}}(f.setup={}),function(a){function b(a){var b=null;switch(a.element.split("-")[0]){case"oc":b="/output_controllers";break;case"ec":b="/exit_conditions";break;case"timer":b=""}return"process/"+a.process+"/state/"+a.state+b}a.initialize=function(){$("#values fieldset:not(.template):not(.bcs)").remove(),c.eachName(function(a){a.forEach(function(a,c){var d=$("#values fieldset.template").clone(),f=d.find("input"),g=a.element.split("-")[0],h=a.element.split("-")[1];if(0===c&&d.removeClass("hide"),d.removeClass("template"),d.find("label").html(a.name),f.attr("data-api",b(a)),f.attr("data-key",h),f.attr("data-fieldmatch",a.name),"oc"===g)f.attr("data-type","number");else if("timer"===g)f.attr("data-type","time");else if("ec"===g)switch(e.processes[a.process].states[a.state].exit_conditions[h].source_type){case 2:f.attr("data-type","time");break;case 1:f.attr("data-type","number")}"timer"===g?(f.attr("data-attr","init"),f.attr("data-object","timers")):f.attr("data-attr","oc"===a.element.split("-")[0]?"setpoint":"value"),e.read(b(a)).then(function(a){f.attr("data-object")&&(a=a[f.attr("data-object")]);var b=a[f.attr("data-key")][f.attr("data-attr")]/10;("timer"===g||"number"!==f.attr("data-type"))&&(b=new BCS.Time(10*b).toString()),f.val(b)}),f.on("change",function(){var b={key:parseInt(f.attr("data-key")),value:{}};"number"===f.attr("data-type")?b.value[f.attr("data-attr")]=parseInt(10*parseFloat(f.val())):"time"===f.attr("data-type")&&(b.value[f.attr("data-attr")]=10*new BCS.Time.fromString(f.val()).value),"timer"===g&&(b={timers:b}),e.write(f.attr("data-api"),b).then(function(a){var b="number"===f.attr("data-type")?a[f.attr("data-key")][f.attr("data-attr")]/10:new BCS.Time(a[f.attr("data-key")].value/10).toString();f.val(b)}),f.parents("fieldset").hasClass("hide")||$('fieldset.hide [data-fieldmatch="'+a.name+'"]').val(f.val()).trigger("change")}),$("#values .fields").append(d)})})}}(f.entry={}),$(document).ready(function(){$("[data-name=bcs]").on("change",function(d){e=new BCS.Device(d.target.value),e.on("notReady",function(){$(d.target).parent().addClass("has-error").removeClass("has-success")}).on("ready",function(){c.load(e.address),Object.keys(c.stored).forEach(function(a){if("version"!==a){var b=$("#exportSystems");b.append($('<label class="checkbox">'+a+"</label>").append($('<input type="checkbox" data-name="'+a+'" checked>')))}}),localStorage["bcs-backup.url"]=e.address,$(d.target).parent().addClass("has-success").removeClass("has-error"),$(".loading").removeClass("hide"),$(".fields").addClass("hide"),async.series([function(c){e.processes||(e.processes=[]),async.times(8,function(c,d){e.read("process/"+c).then(function(a){return e.processes[c]={name:a.name,states:[]},b(c)}).then(function(b){return e.processes[c].states=b,a(c)}).then(function(a){e.processes[c].timers=a})["catch"](function(){$(".failed").removeClass("hide"),$(".loading").addClass("hide"),$(".fields").addClass("hide")})["finally"](d)},c)},function(a){e.helpers.getOutputs().then(function(a){e.outputs=a})["finally"](a)},function(a){e.helpers.getProbes().then(function(a){e.probes=a})["finally"](a)}],function(){f.setup.initialize(),f.entry.initialize(),$(".loading").addClass("hide"),$(".fields").removeClass("hide")})})}),localStorage["bcs-backup.url"]&&($("[data-name=bcs]").val(localStorage["bcs-backup.url"]),$("[data-name=bcs]").change());var g=$("#settingsMenu");g.prepend($("<li></li>").append($('<a href="#" data-toggle="modal" data-target="#export">Export Settings</a>'))),g.prepend($("<li></li>").append($('<a href="#" data-toggle="modal" data-target="#import">Import Settings</a>'))),$("#export button[data-name=export]").on("click",function(a){a.preventDefault();var b={version:c.version};$("#exportSystems input:checked").each(function(a,d){b[d.dataset.name]=c.stored[d.dataset.name]});var d=new Blob([JSON.stringify(b)],{type:"text/plain;charset=utf-8"});saveAs(d,($("[data-name=fileName]").val()||"bcs-recipe-settings")+".json"),$("#export").modal("hide")}),$("#import [data-name=fileName]").on("change",function(a){var b,e=a.target.files[0];b=new FileReader,b.addEventListener("load",function(a){var b=$("#importSystems");b.empty(),d=JSON.parse(a.target.result),d.version===c.version&&Object.keys(d).forEach(function(a){"version"!==a&&b.append($('<label class="checkbox">'+a+"</label>").append($('<input type="checkbox" data-name="'+a+'" checked>')))}),$("#import button").removeClass("hide")}),$("#import button[data-name=import]").on("click",function(){c.stored.version=d.version,$('#import input[type="checkbox"]').each(function(a,b){b.checked&&d[b.dataset.name]&&(c.stored[b.dataset.name]=d[b.dataset.name])}),localStorage["bcs-recipe.fields"]=JSON.stringify(c.stored)}),b.readAsText(e)})})}();
+/*
+	# index.js
+
+	Created by Brent Rahn <brent.rahn@gmail.com>
+
+	Code for BCS Recipe Tool
+*/
+
+/*jshint -W065 */
+/*global Q, BCS */
+(function () {
+
+var bcs = null;
+var recipeFields,
+    importData,
+    view = {};
+
+/*
+	# recipeFields
+*/
+(function (module) {
+  module.version = 1;
+  module.fields = [];
+  module.stored = {};
+  module.url = null;
+
+  module.load = function (bcsUrl) {
+
+    module.url = bcsUrl;
+
+    if(!localStorage['bcs-recipe.fields']) {
+      console.log('no data in localStorage');
+      return false;
+    }
+
+    var fields = JSON.parse(localStorage['bcs-recipe.fields']);
+    console.log('Loading: ' + bcsUrl + ': ' + fields.toString());
+    if(fields.version !== module.version) {
+      console.error('Version mismatch.');
+      return false;
+    }
+
+    module.stored = fields;
+
+		if(!fields[bcsUrl]) {
+			console.error('BCS Not Found in settings.');
+			return false;
+		}
+
+    module.fields = fields[bcsUrl];
+  };
+
+  module.save = function () {
+    module.stored[module.url] = module.fields;
+    module.stored.version = module.version;
+    console.log('Saving: ' + module.url + ': ' + module.stored.toString());
+
+    localStorage['bcs-recipe.fields'] = JSON.stringify(module.stored);
+  };
+
+  module.eachName = function (callback) {
+    module.fields.map(function (e) {return e.name;}) // Get the field names
+      .filter(function (e, i, a) { return a.indexOf(e) === i;}) // Unique
+      .forEach(function (name, index, array) { // Iterate through and call callback for each name
+        // send array of fields with this name to the callback
+        callback(module.fields.filter(function (e) {return e.name === name;}), index, array); 
+      });
+  };
+
+  module.each = function (callback) {
+    module.fields.forEach(callback);  /*(field, index, array)*/
+  };
+
+  module.clear = function () {
+    module.fields = [];
+  };
+
+  module.push = function (element) {
+    module.fields.push(element);
+  };
+}) (recipeFields = {});
+
+/*
+	# view.setup
+
+	Handles the "Variable Setup" tab
+*/
+(function (module) {
+  var fieldCount = 0;
+  function createField() {
+    var $fieldset = $('#setup .fields fieldset').last().clone(true);
+    var $div = $fieldset.find('div.form-group');
+    $div.attr('data-id', parseInt($div.attr('data-id')) + 1);
+    $fieldset.find('[data-name]').val('');
+    $fieldset.find('[data-name=targetState]').empty();
+    $fieldset.find('[data-name=targetElement]').empty();
+
+    $('#setup .fields fieldset').last().after($fieldset);
+    return $fieldset;
+  }
+
+  function populateStateOptions($select, process) {
+    $select.empty();
+    $select.append(new Option(""));
+
+    $.each(bcs.processes[process].states, function(i, state) {
+      $select.append(new Option(state.name, i));
+    });
+  }
+
+  function populateElementOptions($select, $process, state) {
+    var process = bcs.processes[$process.val()];
+    $select.empty();
+    $select.append(new Option(""));
+
+    $.each(process.states[state].timers, function (i, timer) {
+      // Timers that are used, but not continuing from next state
+      if(timer.used && !timer.preserve) {
+        $select.append(new Option("Timer: " + process.timers[i].name, 'timer-' + i));
+      }
+    });
+
+    $.each(process.states[state]['output_controllers'], function(i, oc) {
+      if(oc.mode === 3 || oc.mode === 4 /* Hysteresis or PID */) {
+        $select.append(new Option("Output: " + bcs.outputs[i].name, 'oc-' + i));
+      }
+    });
+
+    $.each(process.states[state]['exit_conditions'], function(i, ec) {
+      var sourceName;
+      if(ec.enabled) {
+        if(ec['source_type'] === 2 /* Timer */) {
+          sourceName = process.timers[ec['source_number']].name;
+          $select.append(new Option("Exit Condition " + (i + 1) + ": " + sourceName, 'ec-' + i));
+        } else if (ec['source_type'] === 1 /* Temp */) {
+          sourceName = bcs.probes[ec['source_number']].name;
+          $select.append(new Option("Exit Condition " + (i + 1) + ": " + sourceName, 'ec-' + i));
+        } else {
+          $select.append(new Option("Exit Condition " + (i + 1), 'ec-' + i));
+        }
+      }
+
+    });
+  }
+
+  module.nextField = function () {
+    var $fieldsets = $('#setup .fields fieldset');
+    if(fieldCount++ === 0)
+    {
+      return $fieldsets.first();
+    }
+
+    return createField();
+  };
+
+  module.initialize = function () {
+    var $select = $('#setup [data-name=targetProcess]');
+
+    /*
+      Set up Process drop down
+    */
+    $select.empty();
+    $select.append(new Option(""));
+
+    $.each(bcs.processes, function (i, process) {
+      $select.append(new Option(process.name, i));
+    });
+
+    $('#setup [data-name=targetProcess]').on('change', function (event) {
+      var $select = $(event.target).siblings('[data-name=targetState]');
+      var process = event.target.value;
+
+      populateStateOptions($select, process);
+
+      $(event.target).siblings('[data-name=targetElement]').empty();
+    });
+
+
+    /*
+      Setup State drop down
+    */
+    $('#setup [data-name=targetState]').on('change', function (event) {
+      var $select = $(event.target).siblings('[data-name=targetElement]');
+      var $process = $(event.target).siblings('[data-name=targetProcess]');
+
+      populateElementOptions($select, $process, event.target.value);
+    });
+
+
+    /*
+      Populate fields from localStorage, if available
+    */
+    recipeFields.each(function (field) {
+
+      var $fieldset = view.setup.nextField();
+
+      $fieldset.find('[data-name=variable]').val(field.name);
+      $fieldset.find('[data-name=targetProcess]').val(field.process);
+
+      populateStateOptions($fieldset.find('[data-name=targetState]'), field.process);
+      $fieldset.find('[data-name=targetState]').val(field.state);
+
+      populateElementOptions($fieldset.find('[data-name=targetElement]'), $fieldset.find('[data-name=targetProcess]'), field.state);
+      $fieldset.find('[data-name=targetElement]').val(field.element);
+    });
+
+    /*
+      Set up button onclick for Save button on settings page
+    */
+    $('#setup button').on('click', function (event) {
+      event.preventDefault();
+
+      recipeFields.clear();
+
+      $('#setup .fields div.form-group').each(function (i, form) {
+        var $form = $(form);
+        var field = {
+          name: $form.find('[data-name=variable]').val(),
+          process: $form.find('[data-name=targetProcess]').val(),
+          state: $form.find('[data-name=targetState]').val(),
+          element: $form.find('[data-name=targetElement]').val()
+        };
+        recipeFields.push(field);
+      });
+
+      recipeFields.save();
+
+      // Render the new recipe fields on the entry form
+      view.entry.initialize();
+    });
+
+    /*
+      Set up the handler for the new field link
+    */
+    $('#setup a.new').on('click', createField);
+
+    /*
+      Set up the handler for the remove field link
+    */
+    $('#setup a.remove').on('click', function (event) {
+      event.preventDefault();
+
+      var $fieldset = $(event.target).parents('fieldset');
+      if($fieldset.find('div.form-group').attr('data-id') !== "0") {
+        $fieldset.remove();
+      } else {
+        $fieldset.find('[data-name]').val('');
+      }
+    });
+  };
+}) (view.setup = {});
+
+
+/*
+	# view.entry
+
+	Handles the "Recipe Values" tab
+*/
+(function (module) {
+  function api(field) {
+    var endpoint = null;
+    switch(field.element.split('-')[0])
+    {
+      case 'oc':
+        endpoint = '/output_controllers';
+        break;
+      case 'ec':
+        endpoint = '/exit_conditions';
+        break;
+      case 'timer':
+        endpoint = '';
+    }
+
+    return 'process/' + field.process + '/state/' + field.state + endpoint;
+  }
+
+  module.initialize = function () {
+    // Remove any existing fields
+    $('#values fieldset:not(.template):not(.bcs)').remove();
+
+    recipeFields.eachName(function (fields) {
+      fields.forEach(function (field, i) {
+        var $fieldset = $('#values fieldset.template').clone();
+        var $input = $fieldset.find('input');
+        var type = field.element.split('-')[0];
+        var index = field.element.split('-')[1];
+
+        // If there are multiple fields with this name, we only display one
+        // and update all the hidden ones when it changes.
+        if(i === 0) { $fieldset.removeClass('hide'); }
+        $fieldset.removeClass('template');
+
+        $fieldset.find('label').html(field.name);
+        $input.attr('data-api', api(field));
+        $input.attr('data-key', index);
+        $input.attr('data-fieldmatch', field.name);
+
+        if(type === 'oc') {
+          $input.attr('data-type', 'number');
+        } else if(type === 'timer') {
+          $input.attr('data-type', 'time');
+        } else if (type === 'ec') {
+          switch(bcs.processes[field.process].states[field.state]['exit_conditions'][index]['source_type']) {
+            case 2:
+              $input.attr('data-type', 'time');
+              break;
+            case 1:
+              $input.attr('data-type', 'number');
+              break;
+          }
+        }
+
+        if(type === 'timer') {
+          $input.attr('data-attr', 'init');
+          $input.attr('data-object', 'timers');
+        } else {
+          $input.attr('data-attr', field.element.split('-')[0] === 'oc' ? 'setpoint' : 'value');
+        }
+
+        bcs.read(api(field)).then(function (body) {
+          if($input.attr('data-object')) {
+            body = body[$input.attr('data-object')];
+          }
+
+          var value = body[$input.attr('data-key')][$input.attr('data-attr')] / 10;
+
+          if(type === 'timer' || $input.attr('data-type') !== 'number') {
+            value = new BCS.Time(value * 10).toString();
+          }
+
+          $input.val(value);
+        });
+
+        $input.on('change', function () {
+          var data = {
+            key: parseInt($input.attr('data-key')),
+            value: {}
+          };
+
+          if($input.attr('data-type') === 'number') {
+            data.value[$input.attr('data-attr')] = parseInt(parseFloat($input.val()) * 10);
+          } else if($input.attr('data-type') === 'time') {
+            data.value[$input.attr('data-attr')] = new BCS.Time.fromString($input.val()).value * 10;
+          }
+
+          if(type === 'timer') {
+            data = { 'timers': data };
+          }
+
+          bcs.write($input.attr('data-api'), data).then(function (body) {
+            var value = $input.attr('data-type') === 'number' ? body[$input.attr('data-key')][$input.attr('data-attr')] / 10 : 
+                                       new BCS.Time(body[$input.attr('data-key')].value / 10).toString();
+            $input.val(value);
+          });
+
+          // Update hidden fields
+          if(!$input.parents('fieldset').hasClass('hide')) {
+            $('fieldset.hide [data-fieldmatch="' + field.name + '"]').val($input.val()).trigger('change');
+          }
+
+        });
+
+        $('#values .fields').append($fieldset);
+
+      });
+    });
+  };
+}) (view.entry = {});
+
+
+function getTimers(process) {
+  var timerPromises = [];
+  for(var i = 0; i < 4; i++) {
+    timerPromises.push(bcs.read('process/' + process + '/timer/' + i));
+  }
+  return Q.all(timerPromises);
+}
+
+function getStates(process) {
+  var statePromises = [];
+  async.times(8, function (i) {
+    statePromises.push(bcs.read('process/' + process + '/state/' + i).then(function (state) {
+
+      return Q.all([
+        bcs.read('process/' + process + '/state/' + i + '/exit_conditions').then(function (ec) {
+          return ec;
+        }),
+        bcs.read('process/' + process + '/state/' + i + '/output_controllers').then(function (oc) {
+          return oc;
+        })
+      ])
+      .then(function (results) {
+        state['exit_conditions'] = results[0];
+        state['output_controllers'] = results[1];
+        return state;
+      });
+    }));
+  });
+
+  return Q.all(statePromises);
+}
+
+/*
+	# document ready
+
+	Initialize and setup the page
+*/
+$( document ).ready( function () {
+  /*
+    When a BCS url is entered, verify that it is running 4.0 and load
+    data from the BCS.
+  */
+  $('[data-name=bcs]').on('change', function (event) {
+    if($(event.target.parentElement).find('.credentials [data-name=password]')[0]) {
+      bcs = new BCS.Device(event.target.value, {
+        auth: {
+          username: 'admin',
+          password: $(event.target.parentElement).find('.credentials [data-name=password]')[0].value
+        }});
+    } else {
+      bcs = new BCS.Device(event.target.value);
+    }
+
+    bcs.on('notReady', function (e) {
+      $(event.target).parent().addClass('has-error').removeClass('has-success');
+
+      // Check if authentication is required
+      if(e.cors && e.cors === 'rejected') {
+        $('.credentials').removeClass('hide');
+      }
+
+    })
+    .on('ready', function () {
+
+      recipeFields.load(bcs.address);
+
+      // Add list of BCS' found in recipeFields to the Export tab
+      Object.keys(recipeFields.stored).forEach(function(device) {
+        if(device === 'version') { return; }
+        var $exportList = $('#exportSystems');
+        $exportList.append(
+          $('<label class="checkbox">' + device + '</label>')
+          .append($('<input type="checkbox" data-name="' + device + '" checked>')));
+      });
+
+      localStorage['bcs-backup.url'] = bcs.address;
+      $(event.target).parent().addClass('has-success').removeClass('has-error');
+
+      $('.loading').removeClass('hide');
+      $('.fields').addClass('hide');
+
+      async.series([
+        /*
+          Get Process / State configuration
+        */
+        function (done) {
+          if(!bcs.processes) { bcs.processes = []; }
+          async.times(8, function (p, nextProcess) {
+            bcs.read('process/' + p).then(function (process) {
+              bcs.processes[p] = {
+                name: process.name,
+                states: []
+              };
+
+              return getStates(p);
+            })
+            .then(function (states) {
+              bcs.processes[p].states = states;
+
+              return getTimers(p);
+            })
+            .then(function (timers) {
+              bcs.processes[p].timers = timers;
+            })
+            .catch(function () {
+              $('.failed').removeClass('hide');
+              $('.loading').addClass('hide');
+              $('.fields').addClass('hide');
+            })
+            .finally(nextProcess);
+          }, done);
+        },
+        /*
+          Get Outputs and Temp Probes so we can show the names
+        */
+        function (done) {
+          bcs.helpers.getOutputs().then(function (outputs) {
+            bcs.outputs = outputs;
+          })
+          .finally(done);
+        },
+        function (done) {
+          bcs.helpers.getProbes().then(function (probes) {
+            bcs.probes = probes;
+          })
+          .finally(done);
+        }
+      ],
+      function () {
+        // done getting values from BCS
+        view.setup.initialize();
+        view.entry.initialize();
+
+        $('.loading').addClass('hide');
+        $('.fields').removeClass('hide');
+      });
+    });
+  });
+
+  $('[data-name=password]').on('change', function () {
+    $('[data-name=bcs]').change();
+  });
+
+  /*
+    Restore the URL on page load if we saved one in localStorage
+  */
+  if(localStorage['bcs-backup.url'])
+  {
+    $('[data-name=bcs]').val(localStorage['bcs-backup.url']);
+    $('[data-name=bcs]').change();
+  }
+
+	/* setup menu items */
+	var $menu = $('#settingsMenu');
+	$menu.prepend($('<li></li>')
+		.append($('<a href="#" data-toggle="modal" data-target="#export">Export Settings</a>')));
+	$menu.prepend($('<li></li>')
+		.append($('<a href="#" data-toggle="modal" data-target="#import">Import Settings</a>')));
+
+  $('#export button[data-name=export]').on('click', function (event) {
+    event.preventDefault();
+    var settings = {
+      version: recipeFields.version
+    };
+
+    $('#exportSystems input:checked').each(function (_, system) {
+      settings[system.dataset['name']] = recipeFields.stored[system.dataset['name']] ;
+    });
+    // Create and save the file
+    var blob = new Blob([JSON.stringify(settings)], {
+      type: "text/plain;charset=utf-8"
+    });
+    saveAs(blob, ($('[data-name=fileName]').val() || "bcs-recipe-settings") + ".json");
+    $('#export').modal('hide');
+  });
+
+  $('#import [data-name=fileName]').on('change', function (event) {
+    var file = event.target.files[0],
+      reader;
+
+    reader = new FileReader();
+    reader.addEventListener("load", function(event) {
+      var importSystems = $('#importSystems');
+      importSystems.empty();
+
+      importData = JSON.parse(event.target.result);
+      if (importData.version === recipeFields.version) {
+        Object.keys(importData).forEach(function(device) {
+          if(device === "version") return;
+
+          importSystems.append(
+            $('<label class="checkbox">' + device + '</label>')
+            .append($('<input type="checkbox" data-name="' + device + '" checked>')));
+        });
+      }
+
+      $('#import button').removeClass('hide');
+
+    });
+
+    $('#import button[data-name=import]').on('click', function () {
+      recipeFields.stored.version = importData.version;
+
+      $('#import input[type="checkbox"]').each(function(_, input) {
+        if(input.checked && importData[input.dataset['name']]) {
+          recipeFields.stored[input.dataset['name']] = importData[input.dataset['name']];
+        }
+      });
+      localStorage['bcs-recipe.fields'] = JSON.stringify(recipeFields.stored);
+
+    });
+
+    reader.readAsText(file);
+  });
+});
+
+})();
